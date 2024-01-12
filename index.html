@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yandex Maps Tile Coords</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h2>Определение координат парковки</h2>
+</header>
+
+<label for="posX">Позиция по горизонтали:</label>
+<input type="number" id="posX" placeholder="posX" min="0"/>
+
+<label for="posY">Позиция по вертикали:</label>
+<input type="number" id="posY" placeholder="posY" min="0"/>
+
+<label for="zoom">Масштаб:</label>
+<input type="number" id="zoom" placeholder="10" min="0"/>
+
+<div>
+  <button
+    onclick="calculateCoordinates()"
+    id="action-btn"
+  >
+    Рассчитать
+  </button>
+</div>
+
+<div id="output"></div>
+<img src="" alt="Tile" id="tile-img" style="display: none">
+
+<script>
+  const checkParams = () => {
+    posX = parseInt(inputX.value);
+    posY = parseInt(inputY.value);
+    zoom = parseInt(inputZoom.value);
+    document.getElementById('action-btn').disabled = !posX || !posY || !zoom;
+  }
+
+  const getTileImg = () => {
+    fetch(tileUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        if (!blob) {
+          alert('По указанным параметрам тайл не обнаружен. Проверьте правильность ввода!');
+        } else {
+          const tileImg = document.getElementById('tile-img');
+          tileImg.style.display = 'block';
+          tileImg.src = URL.createObjectURL(blob);
+        }
+      })
+      .catch(error => {
+        console.error('There has been a problem with your fetch operation:', error);
+      });
+  }
+  const calculateCoordinates = () => {
+    output.innerHTML = '';
+    tileUrl = `https://core-carparks-renderer-lots.maps.yandex.net/maps-rdr-carparks/tiles?l=carparks&x=${posX}&y=${posY}&z=${zoom}&scale=1&lang=ru_RU`;
+    const mapSideLength = Math.pow(2, zoom);
+    const latDegreeSize = mapSideLength / 180;
+    const lonDegreeSize = mapSideLength / 360;
+    const lat = posY / latDegreeSize;
+    const lon = posX / lonDegreeSize;
+    const longitude = lon > 180 ? lon - 180 : -1 * (180 - lon);
+    const latitude = lat > 90 ? -1 * (lat - 90) : lat;
+    output.innerHTML = `<p>Широта: ${latitude.toFixed(6)}, Долгота: ${longitude.toFixed(6)}</p>`;
+    getTileImg();
+  }
+
+  let posX, posY, zoom, tileUrl;
+  const output = document.getElementById('output');
+  const inputX = document.getElementById('posX');
+  const inputY = document.getElementById('posY');
+  const inputZoom = document.getElementById('zoom');
+  inputX.addEventListener('input', checkParams);
+  inputY.addEventListener('input', checkParams);
+  inputZoom.addEventListener('input', checkParams);
+  checkParams();
+</script>
+</body>
+</html>
